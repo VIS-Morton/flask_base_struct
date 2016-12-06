@@ -1,4 +1,5 @@
 from hashlib import md5
+
 from common.config import BaseConfig, DbConfig
 
 
@@ -12,9 +13,8 @@ class AppConfig(BaseConfig):
                                                                        DbConfig.MYSQL_DB_NAME)
     SQLALCHEMY_POOL_SIZE = 5  # default 5
     SQLALCHEMY_POOL_TIMEOUT = 10  # default 10
-    # short recycle time to avoid mysql connection exception while touch reload
+    # short recycle time to avoid mysql connection exception while touch reload, but it's not a good choice
     SQLALCHEMY_POOL_RECYCLE = 30
-    # short recycle time to avoid mysql connection exception while touch reload
     SQLALCHEMY_MAX_OVERFLOW = 1000
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MONGO_URI = "mongodb://%s:%s@%s:%s/%s" % (DbConfig.MONGO_USERNAME, DbConfig.MONGO_PASSWORD, DbConfig.MONGO_HOST,
@@ -23,4 +23,6 @@ class AppConfig(BaseConfig):
 
     REDIS_URL = "redis://:%s@%s:%s/%s" % (DbConfig.REDIS_PASSWORD, DbConfig.REDIS_HOST,
                                           DbConfig.REDIS_PORT, DbConfig.REDIS_DB_NAME)
+
+    CELERY_BROKER_URL = REDIS_URL
 

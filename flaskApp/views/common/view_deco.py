@@ -6,6 +6,7 @@ from flask import request
 from utils import failed_resp
 from flaskApp import redis_client
 
+
 def permission_check(func):
     @wraps(func)
     def _decorate(*args, **kwargs):

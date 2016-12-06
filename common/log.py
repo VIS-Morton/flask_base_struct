@@ -1,46 +1,50 @@
 # coding=utf-8
+import logging
 import os
 import time
-import logging
 
-from config import BaseConfig
+from common.config import BaseConfig
 
-INFO_FORMATTER = logging.Formatter("%(asctime)s | %(levelname)s: %(message)s | %(lineno)04d @ %(funcName)s")
-WARN_FORMATTER = logging.Formatter("%(asctime)s | %(levelname)s: %(message)s | %(lineno)04d @ %(funcName)s %(module)s")
-ERROR_FORMATTER = logging.Formatter("%(asctime)s | %(levelname)s: %(message)s | %(lineno)04d @ %(funcName)s %(pathname)s")
+base_formatter = "[%(asctime)s %(lineno)04d@%(funcName)s %(levelname)s] %(message)s"
+INFO_FORMATTER = logging.Formatter(base_formatter)
+WARN_FORMATTER = logging.Formatter(base_formatter + "-%(module)s")
+ERROR_FORMATTER = logging.Formatter(base_formatter + "-%(pathname)s")
 
 
 def archive_log(log_file_path):
+    """
+    only for small log file。Append write if new file already exists
+    """
     if os.path.isfile(log_file_path):
         new_log_file_path = log_file_path + "-" + time.strftime("%Y%m%d")
         if os.path.isfile(new_log_file_path):
-            with open(new_log_file_path, "ab") as input, open(log_file_path, "rb+") as output:
-                for line in output:
-                    input.write(line)
+            with open(new_log_file_path, "ab") as new_file, open(log_file_path, "rb+") as old_file:
+                for line in old_file:
+                    new_file.write(line)
             try:
                 os.remove(log_file_path)
-            except:
-                with open(log_file_path, "w") as output:
-                    output.write("")
+            except IOError:  # if file handler is in use, the overwrite it
+                with open(log_file_path, "w") as old_file:
+                    old_file.write("")
         else:
             try:
                 os.rename(log_file_path, new_log_file_path)
-            except:
-                with open(log_file_path, "w") as output:
-                    output.write("")
+            except IOError:
+                with open(log_file_path, "w") as old_file:
+                    old_file.write("")
 
 
 def wrapstring(string, level=logging.INFO):
     """
-    打印到屏幕时上色
+    Dye messages when print on screen
     """
-    COLOR = {
+    color_dic = {
         logging.INFO: '\033[92m',   # green
         logging.ERROR: '\033[91m',  # red
         logging.WARN: '\033[93m',   # yellow
         logging.DEBUG: '\033[43m',
         "end": "\33[0m"}
-    return COLOR[level] + string + COLOR["end"]
+    return color_dic[level] + string + color_dic["end"]
 
 
 def create_file_handler(log_name, level=logging.DEBUG, formatter=INFO_FORMATTER):
@@ -69,7 +73,7 @@ def create_time_rotate_handler(log_name, formatter=INFO_FORMATTER):
 
 
 def generate_logger_handler(logger_name, is_stream_handler=True, is_file_handler=True,
-                          add_error_log=True, log_level=logging.DEBUG):
+                            add_error_log=True, log_level=logging.DEBUG):
     handlers = []
     log_path = BaseConfig.LOG_PATH
 
@@ -92,6 +96,7 @@ def generate_logger_handler(logger_name, is_stream_handler=True, is_file_handler
         stream_handler = create_stream_handler(level=log_level)
         handlers.append(stream_handler)
     return handlers
+
 
 def create_logger(logger_name, handlers=None, is_stream_handler=True):
     logger = logging.getLogger(logger_name)

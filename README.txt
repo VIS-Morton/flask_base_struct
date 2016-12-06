@@ -1,4 +1,4 @@
-ySQL
+MySQL
 - http://dev.mysql.com/downloads/
 - MySql Workbench, GUI to operate admin  http://dev.mysql.com/downloads/workbench/
 - set account and database as described in config.ini [Development]
