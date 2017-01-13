@@ -2,45 +2,45 @@
 import re
 import sys
 import time
+from logging import Formatter
 
-from flask import Flask, request
+from werkzeug.wrappers import Response
+from flask import Flask, request, jsonify
 from flask_cors import CORS  # Cross Origin Resource sharing
-from flask_pymongo import PyMongo
-from flask_redis import FlaskRedis
-from flask_socketio import SocketIO
+from flask_sqlalchemy import get_debug_queries
 from flask_wtf.csrf import CsrfProtect
-from celery import Celery
 
 from common.log import generate_logger_handler, create_logger
 from flaskApp.config import AppConfig
-from models import db
+from extension import db, redis_client, mongo_client, socketio, celery
 
 
-socketio = SocketIO()
-redis_client = FlaskRedis()  # Restrict redis
-mongo_client = PyMongo()
-celery = Celery(__name__, broker=AppConfig.CELERY_BROKER_URL)
-# run celery : celery -A flaskApp.celery worker
-# http://stackoverflow.com/questions/25884951/attributeerror-flask-object-has-no-attribute-user-options
+class JsonResponse(Response):
+    @classmethod
+    def force_type(cls, response, environ=None):
+        if isinstance(response, (dict, list)):
+            response = jsonify(response)
+        return super(JsonResponse, cls).force_type(response, environ)
 
 
-def create_app(database, config="flaskApp.config.AppConfig"):
+def create_app(config="flaskApp.config.AppConfig"):
     app = Flask(__name__, root_path=AppConfig.ROOT_PATH)
     app.config.from_object(config)
     CORS(app)
     initialize_app(application=app)
-    database.init_app(app)
-    database.create_all(app=app)
+    db.init_app(app)
+    db.create_all(app=app)
     redis_client.init_app(app=app)
     mongo_client.init_app(app=app)
     if AppConfig.APP_SLOW_LOG:
-        slow_logger_handler = generate_logger_handler("app-slow", is_stream_handler=False, add_error_log=False)
+        slow_logger_handler = generate_logger_handler("app-slow", is_stream_handler=False,
+                                                      add_error_log=False, formatter=Formatter("%(asctime)s %(message)s"))
         app.slow_logger = create_logger("app-slow", handlers=slow_logger_handler)
     app.logger_name = "app"
     app.logger.setLevel(10)
     app.logger.handlers = generate_logger_handler("app")   # handlers is a list
 
-    add_request_handler(application=app, database=database)  # register request handler
+    add_request_handler(application=app, database=db)  # register request handler
     initialize_celery(celery, application=app)
 
     return app
@@ -72,13 +72,18 @@ def initialize_app(application, profile=False):
 def add_request_handler(application, database):
     def write_slow_log(start_time, use_time, status_code):
         if AppConfig.APP_SLOW_LOG:
-            if use_time > AppConfig.APP_SLOW_LOG:
+            index = 0
+            for index, query in enumerate(get_debug_queries()):
+                application.slow_logger.info(
+                    "\nContext: {}\nQuery: {}\nParameters: {}\nDuration:{}\n".format(
+                        query.context, query.statement, query.parameters, query.duration))
+            if use_time > AppConfig.REQUEST_SLOW_TIME:
                 form_data = {}
                 form_data.update(request.form)
                 form_data.update(request.args)
-                application.slow_logger.info("%s %s %s-->start time:%s, use: %s ms, form data: %s" % (
-                    request.method, status_code, request.path, start_time, use_time, str(form_data)))
-
+                application.slow_logger.info("%s %s %s-->use: %s ms, query times: %s form data: %s " %
+                                             (request.method, status_code, request.path,
+                                              use_time, index + 1, str(form_data)))
 
     @application.before_request
     def before_request():
@@ -110,13 +115,10 @@ def add_request_handler(application, database):
             form_data = {}
             form_data.update(request.form)
             form_data.update(request.args)
-            application.logger.error("%s %s -->cost:%s ms, form_data: %s" % (url, method, use_time, str(form_data)))
+            application.logger.error("%s %s -->cost:%s ms, form data: %s" % (url, method, use_time, str(form_data)))
             application.logger.error(exception, exc_info=1)
             write_slow_log(start_time, use_time, 500)
             sys.exc_clear()
-
-
-
 
 
 def initialize_celery(celery, application):
@@ -134,15 +136,13 @@ def initialize_celery(celery, application):
     return celery
 
 
-app = create_app(db)
-
-
-from celleryBackgound import trigger_celery
+app = create_app()
 
 
 @app.route("/test")
 def test():
     import time
+    from celleryBackgound import trigger_celery
     time.sleep(5.1)
     trigger_celery.apply_async(("test", 1), countdown=5)
     return "hello world, celery trigger success"

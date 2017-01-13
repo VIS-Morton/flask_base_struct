@@ -73,7 +73,7 @@ def create_time_rotate_handler(log_name, formatter=INFO_FORMATTER):
 
 
 def generate_logger_handler(logger_name, is_stream_handler=True, is_file_handler=True,
-                            add_error_log=True, log_level=logging.DEBUG):
+                            add_error_log=True, log_level=logging.DEBUG, formatter=INFO_FORMATTER):
     handlers = []
     log_path = BaseConfig.LOG_PATH
 
@@ -83,7 +83,7 @@ def generate_logger_handler(logger_name, is_stream_handler=True, is_file_handler
         log_name = logger_name + ".log"
         log_file_path = os.path.join(log_path, log_name)
         archive_log(log_file_path)
-        info_file_handler = create_file_handler(log_file_path, level=log_level)
+        info_file_handler = create_file_handler(log_file_path, level=log_level, formatter=formatter)
         handlers.append(info_file_handler)
         if add_error_log:
             error_log_name = logger_name + "-error.log"

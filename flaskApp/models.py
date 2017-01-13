@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import INTEGER, VARCHAR, TEXT, DATETIME, func
+from sqlalchemy import INTEGER, VARCHAR, TEXT, DATETIME, func, Enum
 
-
-db = SQLAlchemy()
+from extension import db
 
 
 class User(db.Model):

@@ -16,7 +16,9 @@ class AppConfig(BaseConfig):
     # short recycle time to avoid mysql connection exception while touch reload, but it's not a good choice
     SQLALCHEMY_POOL_RECYCLE = 30
     SQLALCHEMY_MAX_OVERFLOW = 1000
+    SQLALCHEMY_RECORD_QUERIES = True  # set true to record queries
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DATABASE_QUERY_TIMEOUT = 0.01
     MONGO_URI = "mongodb://%s:%s@%s:%s/%s" % (DbConfig.MONGO_USERNAME, DbConfig.MONGO_PASSWORD, DbConfig.MONGO_HOST,
                                               DbConfig.MONGO_PORT, DbConfig.MONGO_DB_NAME)
     MONGO_MAX_POOL_SIZE = 100   # Defaults to 100. Cannot be 0.

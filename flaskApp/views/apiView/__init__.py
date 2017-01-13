@@ -7,6 +7,6 @@ restful_api = Api(api_view)
 
 from userApi import UserResource
 
-restful_api.add_resource(UserResource, "/users")
+restful_api.add_resource(UserResource, "/users", "/users/<int:uid>")
 
 

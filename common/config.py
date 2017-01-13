@@ -15,9 +15,9 @@ class BaseConfig(object):
     LOG_PATH = cf.get(section, "log_path")
     APP_SLOW_LOG = int(cf.get(section, "app_slow_log"))
     try:
-        APP_SLOW_TIME = int(cf.get(section, "app_slow_time"))
+        REQUEST_SLOW_TIME = int(cf.get(section, "request_slow_time"))
     except:
-        APP_SLOW_TIME = 5
+        REQUEST_SLOW_TIME = 5000
 
 
 class DbConfig():
