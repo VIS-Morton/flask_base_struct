@@ -10,9 +10,10 @@ from flask_cors import CORS  # Cross Origin Resource sharing
 from flask_sqlalchemy import get_debug_queries
 from flask_wtf.csrf import CsrfProtect
 
+
 from common.log import generate_logger_handler, create_logger
 from flaskApp.config import AppConfig
-from extension import db, redis_client, mongo_client, socketio, celery
+from extension import db, redis_client, mongo_client, socketio, login_manager, celery
 
 
 class JsonResponse(Response):
@@ -32,6 +33,7 @@ def create_app(config="flaskApp.config.AppConfig"):
     db.create_all(app=app)
     redis_client.init_app(app=app)
     mongo_client.init_app(app=app)
+    login_manager.init_app(app=app)
     if AppConfig.APP_SLOW_LOG:
         slow_logger_handler = generate_logger_handler("app-slow", is_stream_handler=False,
                                                       add_error_log=False, formatter=Formatter("%(asctime)s %(message)s"))

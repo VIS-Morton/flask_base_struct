@@ -9,7 +9,7 @@ class AppConfig(BaseConfig):
     WTF_CSRF_SECRET_KEY = SECRET_KEY
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024  # Max length of upload file, 10G
     SQLALCHEMY_DATABASE_URI = "mysql://%s:%s@%s:%s/%s?charset=utf8" % (DbConfig.MYSQL_USERNAME, DbConfig.MYSQL_PASSWORD,
-                                                                       DbConfig.MONGO_HOST, DbConfig.MYSQL_PORT,
+                                                                       DbConfig.MYSQL_HOST, DbConfig.MYSQL_PORT,
                                                                        DbConfig.MYSQL_DB_NAME)
     SQLALCHEMY_POOL_SIZE = 5  # default 5
     SQLALCHEMY_POOL_TIMEOUT = 10  # default 10
