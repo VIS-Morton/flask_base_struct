@@ -6,14 +6,11 @@ from logging import Formatter
 
 from werkzeug.wrappers import Response
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Cross Origin Resource sharing
 from flask_sqlalchemy import get_debug_queries
-from flask_wtf.csrf import CsrfProtect
-
 
 from common.log import generate_logger_handler, create_logger
-from flaskApp.config import AppConfig
-from extension import db, redis_client, mongo_client, socketio, login_manager, celery
+from webApp.config import AppConfig
+from extension import db, redis_client, mongo_client, socketio, login_manager, csrf, cors, celery
 
 
 class JsonResponse(Response):
@@ -24,31 +21,20 @@ class JsonResponse(Response):
         return super(JsonResponse, cls).force_type(response, environ)
 
 
-def create_app(config="flaskApp.config.AppConfig"):
-    app = Flask(__name__, root_path=AppConfig.ROOT_PATH)
+app = Flask(__name__, root_path=AppConfig.ROOT_PATH)
+
+
+def initialize_app(application, profile=False, config="webApp.config.AppConfig"):
     app.config.from_object(config)
-    CORS(app)
-    initialize_app(application=app)
     db.init_app(app)
+    db.drop_all(app=app)
     db.create_all(app=app)
     redis_client.init_app(app=app)
     mongo_client.init_app(app=app)
     login_manager.init_app(app=app)
-    if AppConfig.APP_SLOW_LOG:
-        slow_logger_handler = generate_logger_handler("app-slow", is_stream_handler=False,
-                                                      add_error_log=False, formatter=Formatter("%(asctime)s %(message)s"))
-        app.slow_logger = create_logger("app-slow", handlers=slow_logger_handler)
-    app.logger_name = "app"
-    app.logger.setLevel(10)
-    app.logger.handlers = generate_logger_handler("app")   # handlers is a list
-
-    add_request_handler(application=app, database=db)  # register request handler
-    initialize_celery(celery, application=app)
-
-    return app
-
-
-def initialize_app(application, profile=False):
+    csrf.init_app(app=app)
+    cors.init_app(app=app)
+    celery.init_app(app=app)
     if profile:
         from werkzeug.contrib.profiler import ProfilerMiddleware
 
@@ -63,12 +49,23 @@ def initialize_app(application, profile=False):
         application.config['PROFILE'] = True
         application.wsgi_app = ProfilerMiddleware(application.wsgi_app, restrictions=[30])
 
-    from flaskApp.views.apiView import api_view
-    application.register_blueprint(api_view)
+    from views.restApiView import rest_api_view
+    import views.generalApiView
 
-    csrf = CsrfProtect()
-    csrf.init_app(application)
-    csrf.exempt(api_view)       # escape csrf protect
+    application.register_blueprint(rest_api_view)
+
+    csrf.exempt(rest_api_view)       # escape csrf protect
+
+
+    if AppConfig.APP_SLOW_LOG:
+        slow_logger_handler = generate_logger_handler("app-slow", is_stream_handler=False,
+                                                      add_error_log=False, formatter=Formatter("%(asctime)s %(message)s"))
+        app.slow_logger = create_logger("app-slow", handlers=slow_logger_handler)
+    app.logger_name = "app"
+    app.logger.setLevel(10)
+    app.logger.handlers = generate_logger_handler("app")   # handlers is a list
+
+    add_request_handler(application=app, database=db)  # register request handler
 
 
 def add_request_handler(application, database):
@@ -123,28 +120,4 @@ def add_request_handler(application, database):
             sys.exc_clear()
 
 
-def initialize_celery(celery, application):
-    celery.conf.update(application.config)
-    BaseTask = celery.Task
-
-    class ContextTask(BaseTask):
-        abstract = True
-
-        def __call__(self, *args, **kwargs):
-            with application.app_context():
-                return BaseTask.__call__(self, *args, **kwargs)
-
-    celery.Task = ContextTask
-    return celery
-
-
-app = create_app()
-
-
-@app.route("/test")
-def test():
-    import time
-    from celleryBackgound import trigger_celery
-    time.sleep(5.1)
-    trigger_celery.apply_async(("test", 1), countdown=5)
-    return "hello world, celery trigger success"
+initialize_app(app)

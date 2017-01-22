@@ -2,8 +2,8 @@ from flask import Blueprint
 
 from flask_restful import Api
 
-api_view = Blueprint("api_view", __name__, url_prefix="/api")
-restful_api = Api(api_view)
+rest_api_view = Blueprint("rest_api_view", __name__, url_prefix="/api")
+restful_api = Api(rest_api_view)
 
 from userApi import UserResource
 

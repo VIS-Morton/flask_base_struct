@@ -1,7 +1,7 @@
 from flask_restful import Resource
 
-from flaskApp.models import User
-from flaskApp.views.common.utils import failed_resp, succeed_resp
+from webApp.models import User
+from webApp.views.common.utils import failed_resp, succeed_resp
 from form import *
 
 

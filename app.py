@@ -1,5 +1,5 @@
 # # -*- coding: utf-8 -*-
-from flaskApp import app
+from webApp import app
 
 if __name__ == "__main__":
     import argparse

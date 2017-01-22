@@ -4,9 +4,11 @@ from functools import wraps, partial
 
 from flask import request
 from wtforms import Form
+from flask_login import UserMixin
 
+from webApp.extension import redis_client
 from utils import failed_resp
-from flaskApp import redis_client
+from webApp import redis_client
 
 
 def permission_check(func):
@@ -24,6 +26,38 @@ def permission_check(func):
     return _decorate
 
 
+class UserMiddleware(UserMixin):
+    def __init__(self, user):
+        self.user = user
+        self.active = False
+        self.anonymous = False
+        self.authenticated = False
+        self.id = None
+
+    def is_active(self):
+        return self.active
+
+    def is_anonymous(self):
+        return self.anonymous
+
+    def is_authenticated(self):
+        return self.authenticated
+
+    def get_id(self):
+        try:
+            return unicode(self.id)
+        except AttributeError:
+            raise NotImplementedError('No `id` attribute - override `get_id`')
+
+    def verify(self):
+        if self.user:
+            self.id = self.user.uid
+            redis_client.hmset("user-" + self.id, {"username": self.user.username})
+            self.active = True
+            self.authenticated = True
+            self.anonymous = False
+
+
 class SecureMiddleWare(object):
     def __init__(self, login=None, auth=None, form=None):
         """
@@ -31,10 +65,10 @@ class SecureMiddleWare(object):
         :param auth: verify the access right of module
         :param form: verify request validation of form
         """
-        self.auth = auth
         self.login = login
+        self.auth = auth
         if form is not None:
-            assert isinstance(form, Form), "form must be subclass of wtforms.form.Form"
+            assert issubclass(form, Form), "form must be subclass of wtforms.form.Form"
         self.form = form
 
     @staticmethod
