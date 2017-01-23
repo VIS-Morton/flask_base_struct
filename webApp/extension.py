@@ -34,4 +34,5 @@ csrf = CsrfProtect()
 cors = CORS()
 celery = FlaskCelery(__name__, broker=AppConfig.CELERY_BROKER_URL)
 # run celery : celery -A module-name.celery worker
+# celery -A webApp.celery  worker
 # http://stackoverflow.com/questions/25884951/attributeerror-flask-object-has-no-attribute-user-options

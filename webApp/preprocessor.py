@@ -20,8 +20,9 @@ class JsonResponse(Response):
 
 def write_preset_data():
     with app.app_context():
-        user = User(uid=1, username="admin@viscovery.cn",
-                    password=User.encode_password("12345678"), roles="1")
+        salt = User.get_salt()
+        password = User.encrypt_password("12345678", salt)
+        user = User(uid=1, username="admin@viscovery.cn", password=password, salt=salt, roles="1")
         role = Role(role_id=1, role_name="administrator")
         db.session.add(user)
         db.session.add(role)

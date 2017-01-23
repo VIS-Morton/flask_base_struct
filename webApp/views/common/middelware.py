@@ -80,7 +80,7 @@ class SecureMiddleWare(object):
 
     @staticmethod
     def permission_check():
-        token = request.headers.get("Authorization", "").split(" ")[-1]
+        token = request.headers.get("Authentication-Token", "").split(" ")[-1]
         if not token:
             return failed_resp("Bearer access token missing", httplib.UNAUTHORIZED)
         access_token = "access-token" + token

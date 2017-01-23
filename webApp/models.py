@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import time
 from hashlib import md5
 
 from sqlalchemy import INTEGER, VARCHAR, TEXT, TIMESTAMP, func, SMALLINT
@@ -16,6 +17,7 @@ class User(db.Model):
     uid = db.Column("uid", INTEGER, primary_key=True, nullable=False, autoincrement=True)
     username = db.Column("username", VARCHAR(length=64), nullable=False, unique=True)
     password = db.Column("password", VARCHAR(length=64), nullable=False)
+    salt = db.Column("salt", VARCHAR(length=64), nullable=False)
     email = db.Column("email", VARCHAR(length=255), nullable=True, unique=True)
     parent_id = db.Column("parent_id", INTEGER, nullable=False, server_default=str(DEFAULT_PARENT_ID),
                           doc="0:no parent")
@@ -31,13 +33,27 @@ class User(db.Model):
         self.__dict__.update(kwargs)
 
     @classmethod
-    def encode_password(cls, password):
-        return md5("courage-{}-blood".format(password)).hexdigest()
+    def get_salt(cls):
+        salt = md5(str(time.time())).hexdigest()
+        return salt
+
+    @classmethod
+    def encrypt_password(cls, password, salt):
+        password = md5("courage-{}-blood".format(password)).hexdigest()
+        return md5(password + salt).hexdigest()
+
+    @classmethod
+    def generate_auth_token(cls, password):
+        return md5("concentration-{}-insistence".format(password)).hexdigest()
 
     @classmethod
     def get_user(cls, username, password):
-        password = cls.encode_password(password)
-        return cls.query.filter_by(username=username, password=password).first()
+        user_row = cls.query.filter_by(username=username).first()
+        if user_row:
+            password = cls.encrypt_password(password, salt=user_row.salt)
+            if password == user_row.password:
+                return user_row
+        return None
 
 
 class Role(db.Model):
@@ -60,7 +76,7 @@ class Role(db.Model):
 
     @classmethod
     def get_permissions(cls, roles):
-        if isinstance(roles, ""):
+        if isinstance(roles, str):
             roles = map(int, roles.split(";"))
         elif isinstance(roles, int):
             roles = [roles]
@@ -68,7 +84,8 @@ class Role(db.Model):
         role_rows = cls.query.filter(cls.role_id.in_(roles)).all()
         permissions = []
         for role_row in role_rows:
-            permissions.extend(map(int, role_row.permissions.split(";")))
+            if role_row.permissions:
+                permissions.extend(map(int, role_row.permissions.split(";")))
         return tuple(set(permissions))
 
 

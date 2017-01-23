@@ -1,4 +1,4 @@
-from flask import request, flash, render_template, redirect, url_for
+from flask import request, jsonify, render_template, redirect, url_for
 from flask_login import login_user
 
 from form import LoginForm
@@ -17,7 +17,7 @@ def login():
         user_row = User.get_user(username, password)
         user = UserMiddleware(user_row)
         login_user(user)
-        return "Logged in successfully"
+        return jsonify(username=user_row.username, uid=user_row.uid)
         next_url = request.validate_form.next_url.data
         return redirect(next_url or url_for("login"))
     return render_template("login.html", form=request.args)
