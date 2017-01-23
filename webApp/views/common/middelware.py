@@ -59,7 +59,7 @@ class UserMiddleware(UserMixin):
 
 
 class SecureMiddleWare(object):
-    def __init__(self, login=None, auth=None, form=None):
+    def __init__(self, login=None, auth=None, form=None, allowed_methods=None):
         """
         :param login: verify login status
         :param auth: verify the access right of module
@@ -70,6 +70,9 @@ class SecureMiddleWare(object):
         if form is not None:
             assert issubclass(form, Form), "form must be subclass of wtforms.form.Form"
         self.form = form
+        if allowed_methods is not None:
+            assert isinstance(allowed_methods, list), "allowed_methods must be a list"
+        self.allowed_methods = [] if allowed_methods is None else map(lambda i: i.upper(), allowed_methods)
 
     @staticmethod
     def authorization_check():
@@ -108,7 +111,8 @@ class SecureMiddleWare(object):
             if self.auth:
                 funcs.append(self.authorization_check)
             if self.form:
-                funcs.append(partial(self.form_check, self.form))
+                if request.method not in self.allowed_methods:
+                    funcs.append(partial(self.form_check, self.form))
             for func in funcs:
                 rv = func()
                 if rv:

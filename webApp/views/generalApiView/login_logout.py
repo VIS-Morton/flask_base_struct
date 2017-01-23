@@ -9,7 +9,7 @@ from webApp.views.common.middelware import SecureMiddleWare, UserMiddleware, per
 
 @app.route("/login", methods=["GET", "POST"], endpoint="login")
 @csrf.exempt
-@SecureMiddleWare(form=LoginForm)
+@SecureMiddleWare(form=LoginForm, allowed_methods=["GET"])
 def login():
     if request.method == "POST":
         username = request.validate_form.username.data
@@ -20,7 +20,7 @@ def login():
         next_url = request.validate_form.next_url.data
         flash("Logged in successfully")
         return redirect(next_url or url_for("login"))
-    return render_template("login.html", form=request.validate_form)
+    return render_template("login.html", form=request.args)
 
 
 @app.route("/logout", methods=["GET", "POST"], endpoint="logout")
