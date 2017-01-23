@@ -17,8 +17,8 @@ def login():
         user_row = User.get_user(username, password)
         user = UserMiddleware(user_row)
         login_user(user)
+        return "Logged in successfully"
         next_url = request.validate_form.next_url.data
-        flash("Logged in successfully")
         return redirect(next_url or url_for("login"))
     return render_template("login.html", form=request.args)
 

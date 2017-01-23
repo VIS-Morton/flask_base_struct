@@ -1,4 +1,4 @@
-import login_logout
+import login_view
 from webApp import app
 from webApp.celeryBackgound import trigger_celery
 

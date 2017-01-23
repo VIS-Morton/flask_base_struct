@@ -11,13 +11,16 @@ class User(db.Model):
 
     IN_SERVICE = 1
     OUT_SERVICE = 0
+    DEFAULT_PARENT_ID = 0
 
     uid = db.Column("uid", INTEGER, primary_key=True, nullable=False, autoincrement=True)
     username = db.Column("username", VARCHAR(length=64), nullable=False, unique=True)
     password = db.Column("password", VARCHAR(length=64), nullable=False)
     email = db.Column("email", VARCHAR(length=255), nullable=True, unique=True)
-    parent_id = db.Column("parent_id", INTEGER, nullable=False, default=0, doc="0:no parent")
-    roles = db.Column("roles", VARCHAR(length=255), nullable=False, default="", doc="user roles, split by ';'")
+    parent_id = db.Column("parent_id", INTEGER, nullable=False, server_default=str(DEFAULT_PARENT_ID),
+                          doc="0:no parent")
+    roles = db.Column("roles", VARCHAR(length=255), nullable=False, server_default="",
+                      doc="user roles, split by ';'")
     register_time = db.Column("register_time", TIMESTAMP, server_default=func.now(), nullable=False)
     last_login_time = db.Column("last_login_time", TIMESTAMP, server_default=func.now(),
                                 nullable=False, onupdate=func.now())
@@ -54,6 +57,19 @@ class Role(db.Model):
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+    @classmethod
+    def get_permissions(cls, roles):
+        if isinstance(roles, ""):
+            roles = map(int, roles.split(";"))
+        elif isinstance(roles, int):
+            roles = [roles]
+        assert isinstance(roles, (list, tuple))
+        role_rows = cls.query.filter(cls.role_id.in_(roles)).all()
+        permissions = []
+        for role_row in role_rows:
+            permissions.extend(map(int, role_row.permissions.split(";")))
+        return tuple(set(permissions))
 
 
 class Permission(db.Model):
