@@ -1,6 +1,7 @@
 import struct
 import socket
 
+
 def ip2long(ip):
     """ip to unsigned long int"""
     return struct.unpack("!I", socket.inet_aton(ip))[0]

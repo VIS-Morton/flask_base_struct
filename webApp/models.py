@@ -2,23 +2,24 @@
 import time
 from hashlib import md5
 
-from sqlalchemy import INTEGER, VARCHAR, TEXT, TIMESTAMP, func, SMALLINT
+from sqlalchemy import INTEGER, VARCHAR, TIMESTAMP, func, SMALLINT, Index
+from flask_login import UserMixin
 
 from extension import db
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "user"
 
     IN_SERVICE = 1
     OUT_SERVICE = 0
-    DEFAULT_PARENT_ID = 0
+    DEFAULT_PARENT_ID = 0  # 0 means having no parent
 
     uid = db.Column("uid", INTEGER, primary_key=True, nullable=False, autoincrement=True)
-    username = db.Column("username", VARCHAR(length=64), nullable=False, unique=True)
+    username = db.Column("username", VARCHAR(length=64), nullable=False)
     password = db.Column("password", VARCHAR(length=64), nullable=False)
     salt = db.Column("salt", VARCHAR(length=64), nullable=False)
-    email = db.Column("email", VARCHAR(length=255), nullable=True, unique=True)
+    email = db.Column("email", VARCHAR(length=255), nullable=False, server_default="")
     parent_id = db.Column("parent_id", INTEGER, nullable=False, server_default=str(DEFAULT_PARENT_ID),
                           doc="0:no parent")
     roles = db.Column("roles", VARCHAR(length=255), nullable=False, server_default="",
@@ -26,8 +27,11 @@ class User(db.Model):
     register_time = db.Column("register_time", TIMESTAMP, server_default=func.now(), nullable=False)
     last_login_time = db.Column("last_login_time", TIMESTAMP, server_default=func.now(),
                                 nullable=False, onupdate=func.now())
-    status = db.Column("status", SMALLINT, server_default=str(IN_SERVICE), doc="1:in service 0:out of service")
-    option = db.Column("option", TEXT(65535), nullable=True, doc="default recognize option;json;lower priority")
+    active = db.Column("active", SMALLINT, server_default=str(IN_SERVICE), nullable=False,
+                       doc="1:in service 0:out of service")
+
+    usernameIndex = Index("username", username, unique=True)
+    emailIndex = Index("email", email, unique=True)
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -48,7 +52,7 @@ class User(db.Model):
 
     @classmethod
     def get_user(cls, username, password):
-        user_row = cls.query.filter_by(username=username).first()
+        user_row = cls.query.filter_by(username=username, active=cls.IN_SERVICE).first()
         if user_row:
             password = cls.encrypt_password(password, salt=user_row.salt)
             if password == user_row.password:
@@ -66,7 +70,7 @@ class Role(db.Model):
                         doc="value is 1 means it is admin which has all permissions")
     role_name = db.Column("role_name", VARCHAR(255), nullable=False)
     permissions = db.Column("permissions", VARCHAR(255), nullable=False, default="", doc="split by ';'")
-    status = db.Column("status", SMALLINT, server_default=str(IN_SERVICE), nullable=False,
+    active = db.Column("active", SMALLINT, server_default=str(IN_SERVICE), nullable=False,
                        doc="1:in service 0:out of service")
     create_time = db.Column("create_time", TIMESTAMP, nullable=False, server_default=func.now())
     update_time = db.Column("update_time", TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
@@ -81,7 +85,7 @@ class Role(db.Model):
         elif isinstance(roles, int):
             roles = [roles]
         assert isinstance(roles, (list, tuple))
-        role_rows = cls.query.filter(cls.role_id.in_(roles)).all()
+        role_rows = cls.query.filter(cls.role_id.in_(roles), cls.active==cls.IN_SERVICE).all()
         permissions = []
         for role_row in role_rows:
             if role_row.permissions:
@@ -105,7 +109,7 @@ class Permission(db.Model):
     url = db.Column("url", VARCHAR(255), nullable=False, server_default="",
                     doc="full url route of the permission;"
                         "null for root module, parent of the permission which has url")
-    status = db.Column("status", SMALLINT, nullable=False, server_default=str(IN_SERVICE),
+    active = db.Column("active", SMALLINT, nullable=False, server_default=str(IN_SERVICE),
                        doc="1:in service 0:out of service")
     create_time = db.Column("create_time", TIMESTAMP, nullable=False, server_default=func.now())
     update_time = db.Column("update_time", TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())

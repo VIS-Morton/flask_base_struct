@@ -25,15 +25,7 @@ def initialize_app(app, profile=False, config="webApp.config.AppConfig"):
     celery.init_app(app=app)
     if profile:
         from werkzeug.contrib.profiler import ProfilerMiddleware
-
-        """
-        请求性能测试参数说明：
-            tottime : 在这个函数中所花费所有时间。
-            percall : 是 tottime 除以 ncalls 的结果。
-            cumtime : 花费在这个函数以及任何它调用的函数的时间。
-            percall : cumtime 除以 ncalls。
-            filename:lineno(function) : 函数名以及位置。
-        """
+        # Performance profile：#
         app.config['PROFILE'] = True
         app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30])
 

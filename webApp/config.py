@@ -6,6 +6,7 @@ from common.config import BaseConfig, DbConfig
 class AppConfig(BaseConfig):
     SECRET_KEY = md5("app_name").hexdigest()
     CSRF_ENABLED = True
+    AUTH_HEADER_NAME = "Authentication-Token"
     WTF_CSRF_SECRET_KEY = SECRET_KEY
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024  # Max length of upload file, 10G
     SQLALCHEMY_DATABASE_URI = "mysql://%s:%s@%s:%s/%s?charset=utf8" % (DbConfig.MYSQL_USERNAME, DbConfig.MYSQL_PASSWORD,
