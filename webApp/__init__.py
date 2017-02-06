@@ -7,7 +7,7 @@ app = Flask(__name__, root_path=AppConfig.ROOT_PATH)
 
 import preprocessor
 from common.log import generate_logger_handler, create_logger
-from extension import db, redis_client, mongo_client, socketio, login_manager, csrf, cors, celery
+from extension import db, redis_client, mongo_client, socketio, csrf, cors, celery
 from views.restApiView import rest_api_view
 import views.generalApiView
 
@@ -19,7 +19,6 @@ def initialize_app(app, profile=False, config="webApp.config.AppConfig"):
     db.create_all(app=app)
     redis_client.init_app(app=app)
     mongo_client.init_app(app=app)
-    login_manager.init_app(app=app)
     csrf.init_app(app=app)
     cors.init_app(app=app)
     celery.init_app(app=app)

@@ -29,7 +29,6 @@ db = SQLAlchemy()
 socketio = SocketIO()
 redis_client = FlaskRedis()  # Restrict redis
 mongo_client = PyMongo()
-login_manager = LoginManager()
 csrf = CsrfProtect()
 cors = CORS()
 celery = FlaskCelery(__name__, broker=AppConfig.CELERY_BROKER_URL)

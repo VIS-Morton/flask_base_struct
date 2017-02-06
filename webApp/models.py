@@ -7,7 +7,18 @@ from sqlalchemy import INTEGER, VARCHAR, TEXT, TIMESTAMP, func, SMALLINT
 from extension import db
 
 
-class User(db.Model):
+class Sample(db.Model):
+    __tablename__ = "sample"
+
+    id = db.Column("id", INTEGER, primary_key=True, nullable=False, autoincrement=True)
+
+    def __init__(self):
+        pass
+
+
+# Example
+#class User(db.Model):
+class User(object):
     __tablename__ = "user"
 
     IN_SERVICE = 1
@@ -54,61 +65,3 @@ class User(db.Model):
             if password == user_row.password:
                 return user_row
         return None
-
-
-class Role(db.Model):
-    __tablename__ = "role"
-
-    IN_SERVICE = 1
-    OUT_SERVICE = 0
-
-    role_id = db.Column("role_id", INTEGER, primary_key=True, nullable=False, autoincrement=True,
-                        doc="value is 1 means it is admin which has all permissions")
-    role_name = db.Column("role_name", VARCHAR(255), nullable=False)
-    permissions = db.Column("permissions", VARCHAR(255), nullable=False, default="", doc="split by ';'")
-    status = db.Column("status", SMALLINT, server_default=str(IN_SERVICE), nullable=False,
-                       doc="1:in service 0:out of service")
-    create_time = db.Column("create_time", TIMESTAMP, nullable=False, server_default=func.now())
-    update_time = db.Column("update_time", TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    @classmethod
-    def get_permissions(cls, roles):
-        if isinstance(roles, str):
-            roles = map(int, roles.split(";"))
-        elif isinstance(roles, int):
-            roles = [roles]
-        assert isinstance(roles, (list, tuple))
-        role_rows = cls.query.filter(cls.role_id.in_(roles)).all()
-        permissions = []
-        for role_row in role_rows:
-            if role_row.permissions:
-                permissions.extend(map(int, role_row.permissions.split(";")))
-        return tuple(set(permissions))
-
-
-class Permission(db.Model):
-    """
-    permission of module, control the access of url
-    """
-    __tablename__ = "permission"
-
-    IN_SERVICE = 1
-    OUT_SERVICE = 0
-
-    permission_id = db.Column("permission_id", INTEGER, primary_key=True, nullable=False, autoincrement=True)
-    permission_name = db.Column("permission_name", VARCHAR(255), nullable=False)
-    parent_id = db.Column("parent_id", INTEGER, nullable=False, server_default=str(0),
-                          doc="0:no parent; root")
-    url = db.Column("url", VARCHAR(255), nullable=False, server_default="",
-                    doc="full url route of the permission;"
-                        "null for root module, parent of the permission which has url")
-    status = db.Column("status", SMALLINT, nullable=False, server_default=str(IN_SERVICE),
-                       doc="1:in service 0:out of service")
-    create_time = db.Column("create_time", TIMESTAMP, nullable=False, server_default=func.now())
-    update_time = db.Column("update_time", TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)

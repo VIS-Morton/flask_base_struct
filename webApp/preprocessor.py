@@ -6,7 +6,7 @@ from flask_sqlalchemy import get_debug_queries
 from werkzeug.wrappers import Response
 
 from webApp import app
-from models import User, Role, db
+from models import db, Sample
 from config import AppConfig
 
 
@@ -20,12 +20,8 @@ class JsonResponse(Response):
 
 def write_preset_data():
     with app.app_context():
-        salt = User.get_salt()
-        password = User.encrypt_password("12345678", salt)
-        user = User(uid=1, username="admin@viscovery.cn", password=password, salt=salt, roles="1")
-        role = Role(role_id=1, role_name="administrator")
-        db.session.add(user)
-        db.session.add(role)
+        sample = Sample()
+        db.session.add(sample)
         db.session.commit()
         db.session.close()
 
